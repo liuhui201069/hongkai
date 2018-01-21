@@ -14,7 +14,7 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 import org.springframework.transaction.annotation.TransactionManagementConfigurer;
 
 /**
- * @author chengyu.hcy
+ * @author huiliu
  * @since 2017/8/29
  */
 @Configuration

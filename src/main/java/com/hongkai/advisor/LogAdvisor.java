@@ -10,7 +10,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 /**
- * @author chengyu.hcy
+ * @author huiliu
  * @since 2016/10/12
  */
 @Aspect
