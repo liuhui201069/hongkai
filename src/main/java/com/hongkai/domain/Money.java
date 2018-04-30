@@ -11,6 +11,7 @@ public class Money {
     Integer id;
     Integer customerId;
     String customer;
+    String pinyin;
     String date;
     Integer num;
     Integer type;

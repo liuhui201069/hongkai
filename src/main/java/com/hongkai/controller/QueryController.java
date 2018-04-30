@@ -8,6 +8,8 @@ import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.alibaba.fastjson.JSONObject;
+
 import com.google.common.collect.Lists;
 import com.hongkai.code.Result;
 import com.hongkai.domain.MoneySum;
@@ -129,7 +131,7 @@ public class QueryController {
         return getExcel(request, response, filename, ZXYW);
     }
 
-    public static List<String> YSK_TABLE_HEADER = Lists.newArrayList("客户名称", "货款总额", "付款总额", "应收款总额");
+    public static List<String> YSK_TABLE_HEADER = Lists.newArrayList("客户名称", "上期欠款","本期发生","本期付款","本期下欠");
     public static List<String> XJYW_TABLE_HEADER = Lists.newArrayList("品种", "数量", "运费", "总额");
 
     private Result getXjywExcel(HttpServletRequest request, HttpServletResponse response, String filename) {
@@ -241,7 +243,7 @@ public class QueryController {
         }
 
         if (result.isSuccess()) {
-            List<MoneySum> records = (List<MoneySum>)result.getResult();
+            List records = (List)result.getResult();
             try {
                 //设置输出流
                 OutputStream out = response.getOutputStream();
@@ -281,23 +283,27 @@ public class QueryController {
                 }
                 //为Excel添加数据
                 for (int j = 0; j < records.size(); j++) {
-                    MoneySum moneySum = records.get(j);
+                    JSONObject jo = (JSONObject)records.get(j);
                     row = sheet.createRow(j + 1);
                     //第1列
                     cell = row.createCell(0);
-                    cell.setCellValue(moneySum.getCustomer());
+                    cell.setCellValue(jo.getString("customer"));
                     cell.setCellStyle(style);
                     //第2列
                     cell = row.createCell(1);
-                    cell.setCellValue(moneySum.getCost());
+                    cell.setCellValue(jo.getString("last_rest"));
                     cell.setCellStyle(style);
                     //第3列
                     cell = row.createCell(2);
-                    cell.setCellValue(moneySum.getStore());
+                    cell.setCellValue(jo.getString("current_cost"));
                     cell.setCellStyle(style);
                     //第4列
                     cell = row.createCell(3);
-                    cell.setCellValue(moneySum.getYsk());
+                    cell.setCellValue(jo.getString("current_pay"));
+                    cell.setCellStyle(style);
+                    //第5列
+                    cell = row.createCell(4);
+                    cell.setCellValue(jo.getString("current_rest"));
                     cell.setCellStyle(style);
                 }
 

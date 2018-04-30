@@ -18,6 +18,7 @@ public class Record {
     Integer id;
     Integer customerId;
     String customer;
+    String pinyin;
     String date;
     String variety;
     Integer varietyId;

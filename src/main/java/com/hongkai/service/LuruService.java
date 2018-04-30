@@ -1,8 +1,13 @@
 package com.hongkai.service;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
+
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -17,6 +22,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
+
+import static util.Constants.HTYW;
 
 /**
  * @author huiliu
@@ -180,7 +187,30 @@ public class LuruService {
     public Result sumRecordByVarietyAndTypeForCustomer(Integer customerId,Integer type, String startDate, String endDate) {
         try {
             List<Record> records = recordMapper.groupRecordByVarietyAndTypeForCustomer(customerId,type, startDate, endDate);
-            return new Result(records);
+
+            String firstDay = org.apache.commons.lang3.StringUtils.substringBeforeLast(startDate,"-") + "-" + "01";
+            Integer lastCost = recordMapper.sumLastTotalByCustomer(customerId, type, firstDay);
+            Integer lastPay = moneyMapper.sumLastTotalByCustomer(customerId, type, firstDay);
+            Integer currentCost = recordMapper.sumTotalByCustomer(customerId, type, startDate, endDate);
+            Integer currentPay = moneyMapper.sumTotalByCustomer(customerId, type, startDate, endDate);
+
+            lastCost = (lastCost == null )? 0 : lastCost;
+            lastPay = (lastPay == null )? 0 : lastPay;
+            currentCost = (currentCost == null )? 0 : currentCost;
+            currentPay = (currentPay == null )? 0 : currentPay;
+
+            JSONArray arr = new JSONArray();
+            JSONObject rest = new JSONObject();
+            rest.put("last_rest", lastCost - lastPay);
+            rest.put("current_cost", currentCost);
+            rest.put("current_pay", currentPay);
+            rest.put("current_rest", lastCost + currentCost - lastPay - currentPay);
+            arr.add(rest);
+
+            JSONObject rst = new JSONObject();
+            rst.put("rest", arr);
+            rst.put("records", records);
+            return new Result(rst);
         } catch (Exception e) {
             log.error("@LuruService@sumRecordByVarietyAndCustomer fail.start:{},end:{}", startDate, endDate, e);
             return new Result(false, String.format("查询从%s到%s的按客户和品种汇总失败", startDate, endDate));
@@ -273,49 +303,69 @@ public class LuruService {
      */
     public Result sumRecordByCustomerAndType(Integer type, String startDate, String endDate) {
         try {
-            List<MoneySum> records = recordMapper.groupRecordByCustomerAndType(type, startDate, endDate);
-            List<MoneySum> moneySums = moneyMapper.sumMoneyByCustomerAndType(type, startDate, endDate);
 
-            Set<Integer> ids = Sets.newLinkedHashSet();
-            Map<Integer, MoneySum> costSumMap = Maps.newHashMap();
-            for(MoneySum record : records){
-                ids.add(record.getCustomerId());
-                costSumMap.put(record.getCustomerId(), record);
+            String firstDay = org.apache.commons.lang3.StringUtils.substringBeforeLast(startDate,"-") + "-" + "01";
+            List<Record> lastCost = recordMapper.groupLastTotalByCustomer(type, firstDay);
+            List<Money> lastPay = moneyMapper.groupLastTotalByCustomer(type, firstDay);
+            List<Record> currentCost = recordMapper.groupTotalByCustomer(type, startDate, endDate);
+            List<Money> currentPay = moneyMapper.groupTotalByCustomer(type, startDate, endDate);
+
+            Map<Integer,String> ids = Maps.newHashMap();
+            Map<Integer,String> pinyins = Maps.newHashMap();
+            Map<Integer, Integer> lastCostMap = Maps.newHashMap();
+            for(Record record : lastCost){
+                ids.put(record.getCustomerId(), record.getCustomer());
+                pinyins.put(record.getCustomerId(), record.getPinyin());
+                lastCostMap.put(record.getCustomerId(), record.getTotal());
             }
 
-            Map<Integer, MoneySum> storeSumMap = Maps.newHashMap();
-            for(MoneySum moneySum:moneySums){
-                ids.add(moneySum.getCustomerId());
-                storeSumMap.put(moneySum.getCustomerId(), moneySum);
+            Map<Integer, Integer> lastPayMap = Maps.newHashMap();
+            for(Money money: lastPay){
+                ids.put(money.getCustomerId(), money.getCustomer());
+                pinyins.put(money.getCustomerId(), money.getPinyin());
+                lastPayMap.put(money.getCustomerId(), money.getNum());
             }
 
+            Map<Integer, Integer> currentCostMap = Maps.newHashMap();
+            for(Record record: currentCost){
+                ids.put(record.getCustomerId(), record.getCustomer());
+                pinyins.put(record.getCustomerId(), record.getPinyin());
+                currentCostMap.put(record.getCustomerId(), record.getTotal());
+            }
 
-            List<MoneySum> results = Lists.newArrayList();
-            for (Integer id : ids) {
-                Integer cost = costSumMap.get(id) == null ? 0 : costSumMap.get(id).getCost();
-                Integer store = storeSumMap.get(id) == null ? 0 : storeSumMap.get(id).getStore();
-                Integer discount = storeSumMap.get(id) == null ?  0 : storeSumMap.get(id).getDiscount();
-                Integer ysk = cost - store - discount;
+            Map<Integer, Integer> currentPayMap = Maps.newHashMap();
+            for(Money money: currentPay){
+                ids.put(money.getCustomerId(), money.getCustomer());
+                pinyins.put(money.getCustomerId(), money.getPinyin());
+                currentPayMap.put(money.getCustomerId(), money.getNum());
+            }
 
-                MoneySum moneySum = new MoneySum();
-                if(costSumMap.containsKey(id)){
-                    MoneySum record = costSumMap.get(id);
-                    moneySum.setCustomer(record.getCustomer());
-                    moneySum.setCustomerId(record.getCustomerId());
-                }else{
-                    MoneySum record = storeSumMap.get(id);
-                    moneySum.setCustomer(record.getCustomer());
-                    moneySum.setCustomerId(record.getCustomerId());
+            JSONArray jsonArray = new JSONArray();
+            for (Integer id : ids.keySet()) {
+                Integer lastCostValue = lastCostMap.get(id) == null ? 0 : lastCostMap.get(id);
+                Integer lastPayValue = lastPayMap.get(id) == null ? 0 : lastPayMap.get(id);
+                Integer currentCostValue = currentCostMap.get(id) == null ?  0 : currentCostMap.get(id);
+                Integer currentPayValue = currentPayMap.get(id) == null ?  0 : currentPayMap.get(id);
+
+                JSONObject rest = new JSONObject();
+                rest.put("customer", ids.get(id));
+                rest.put("pinyin", pinyins.get(id));
+                rest.put("last_rest", lastCostValue - lastPayValue);
+                rest.put("current_cost", currentCostValue);
+                rest.put("current_pay", currentPayValue);
+                rest.put("current_rest", lastCostValue + currentCostValue - lastPayValue - currentPayValue);
+
+                jsonArray.add(rest);
+            }
+
+            List l = jsonArray.stream().sorted(Comparator.comparing(
+                obj -> {
+                    JSONObject jo = (JSONObject) obj;
+                    return jo.getString("pinyin");
                 }
-                moneySum.setCost(cost);
-                moneySum.setStore(store);
-                moneySum.setDiscount(discount);
-                moneySum.setYsk(ysk);
+            )).collect(Collectors.toList());
 
-                results.add(moneySum);
-            }
-
-            return new Result(results);
+            return new Result(l);
         } catch (Exception e) {
             log.error("@LuruService@ sumRecordByCustomerAndType fail. type:{}, startDate:{},endDate:{} ", type,
                 startDate, endDate, e);

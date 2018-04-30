@@ -81,20 +81,20 @@
                                 field: 'customer',
                                 title: '客户名称'
                             }, {
-                                field: 'cost',
-                                title: '货款总额',
+                                field: 'last_rest',
+                                title: '上期欠款',
                                 sortable:true
                             }, {
-                                field: 'store',
-                                title: '付款总额',
+                                field: 'current_cost',
+                                title: '本期发生',
                                 sortable:true
                             }, {
-                                field: 'discount',
-                                title: '优惠总额',
+                                field: 'current_pay',
+                                title: '本期付款',
                                 sortable:true
                             },{
-                                field: 'ysk',
-                                title: '应收款总额',
+                                field: 'current_rest',
+                                title: '本期下欠',
                                 sortable:true
                             }]
                         });

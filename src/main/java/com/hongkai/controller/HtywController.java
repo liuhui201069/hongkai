@@ -8,6 +8,9 @@ import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
+
 import com.google.common.collect.Lists;
 import com.hongkai.code.Result;
 import com.hongkai.domain.Customer;
@@ -35,6 +38,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.servlet.ModelAndView;
 import util.DateUtil;
 
 import static util.Constants.HTYW;
@@ -614,6 +618,7 @@ public class HtywController {
         return luruService.sumRecordByVarietyAndTypeForCustomer(customerId, HTYW, startDate, endDate);
     }
 
+    public static List<String> QK_TABLE_HEADER = Lists.newArrayList("上期欠款","本期发生","本期付款","本期下欠");
     public static List<String> GR_PZHZ_TABLE_HEADER = Lists.newArrayList("客户名称", "品种", "数量", "运费", "总额");
     public static List<String> QBHZ_TABLE_HEADER = Lists.newArrayList("品种", "数量", "运费", "总额");
 
@@ -635,7 +640,10 @@ public class HtywController {
 
         Result result = luruService.sumRecordByVarietyAndTypeForCustomer(customerId, HTYW, startDate, endDate);
         if (result.isSuccess()) {
-            List<Record> records = (List<Record>)result.getResult();
+            JSONObject jsonObject = (JSONObject) result.getResult();
+            List<Record> records = (List<Record>)jsonObject.getObject("records", List.class);
+            JSONArray rest = jsonObject.getJSONArray("rest");
+            JSONObject restObj = (JSONObject)rest.get(0);
             try {
                 //设置输出流
                 OutputStream out = response.getOutputStream();
@@ -665,7 +673,36 @@ public class HtywController {
                 HSSFRow row = sheet.createRow(0);
                 HSSFCell cell;
 
+                //为Excel添加欠款表头
+                for (int i = 0; i < QK_TABLE_HEADER.size(); i++) {
+                    cell = row.createCell(i);
+                    cell.setCellValue(QK_TABLE_HEADER.get(i));
+                    cell.setCellStyle(headStyle);
+                    //设置列表宽度
+                    sheet.setColumnWidth(i, GR_PZHZ_TABLE_HEADER.get(i).toString().length() * 800);
+                }
+
+                //为Excel添加数据
+                row = sheet.createRow( 1);
+                //第1列
+                cell = row.createCell(0);
+                cell.setCellValue(restObj.getString("last_rest"));
+                cell.setCellStyle(style);
+                //第1列
+                cell = row.createCell(1);
+                cell.setCellValue(restObj.getString("current_cost"));
+                cell.setCellStyle(style);
+                //第2列
+                cell = row.createCell(2);
+                cell.setCellValue(restObj.getString("current_pay"));
+                cell.setCellStyle(style);
+                //第3列
+                cell = row.createCell(3);
+                cell.setCellValue(restObj.getString("current_rest"));
+                cell.setCellStyle(style);
+
                 //为Excel添加表头
+                row = sheet.createRow( 3);
                 for (int i = 0; i < GR_PZHZ_TABLE_HEADER.size(); i++) {
                     cell = row.createCell(i);
                     cell.setCellValue(GR_PZHZ_TABLE_HEADER.get(i));
@@ -676,7 +713,7 @@ public class HtywController {
                 //为Excel添加数据
                 for (int j = 0; j < records.size(); j++) {
                     Record record = records.get(j);
-                    row = sheet.createRow(j + 1);
+                    row = sheet.createRow(j + 4);
                     //第1列
                     cell = row.createCell(0);
                     cell.setCellValue(record.getCustomer());

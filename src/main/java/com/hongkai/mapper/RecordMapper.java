@@ -52,7 +52,7 @@ public interface RecordMapper {
             + "LEFT JOIN variety ON variety.id = record.variety_id "
             + "WHERE record.customer_id = #{customerId} AND record.type = #{type} AND record.date >= #{startDate} AND"
             + " record.date <= #{endDate} "
-            + "ORDER BY customer.pinyin"
+            + "ORDER BY record.date"
     )
     List<Record> getRecordByCustomerAndTypeAndTime(@Param("customerId") Integer customerId,
                                                    @Param("type") Integer type,
@@ -173,4 +173,45 @@ public interface RecordMapper {
         + ",total = #{record.total},car_number = #{record.carNumber},car_owner = #{record.carOwner} "
         + "WHERE id = #{record.id}")
     void updateRecord(@Param("record") Record record);
+
+    @Select("SELECT sum(record.total) as total "
+            + "FROM record "
+            + "WHERE record.customer_id = #{customerId} AND record.type = #{type} AND record.date >= #{startDate} AND "
+            + " record.date <= #{endDate} "
+    )
+    Integer sumTotalByCustomer(@Param("customerId")Integer customerId,
+                           @Param("type")Integer type,
+                           @Param("startDate")String startDate,
+                           @Param("endDate")String endDate);
+
+    @Select("SELECT sum(record.total) as total "
+        + "FROM record "
+        + "WHERE record.customer_id = #{customerId} AND record.type = #{type} AND "
+        + " record.date < #{endDate} "
+    )
+    Integer sumLastTotalByCustomer(@Param("customerId")Integer customerId,
+                               @Param("type")Integer type,
+                               @Param("endDate")String endDate);
+
+
+    @Select("SELECT customer.id as customerId,customer.name as customer,customer.pinyin as pinyin,sum(record.total) as total "
+        + "FROM record "
+        + "LEFT JOIN customer ON record.customer_id = customer.id "
+        + "WHERE record.type = #{type} AND record.date >= #{startDate} AND "
+        + " record.date <= #{endDate} "
+        + " group by record.customer_id"
+    )
+    List<Record> groupTotalByCustomer(@Param("type")Integer type,
+                                      @Param("startDate")String startDate,
+                                      @Param("endDate")String endDate);
+
+    @Select("SELECT customer.id as customerId,customer.name as customer,customer.pinyin as pinyin,sum(record.total) as total "
+        + "FROM record "
+        + "LEFT JOIN customer ON record.customer_id = customer.id "
+        + "WHERE record.type = #{type} AND "
+        + " record.date < #{endDate} "
+        + " group by record.customer_id"
+    )
+    List<Record> groupLastTotalByCustomer(@Param("type")Integer type,
+                                          @Param("endDate")String endDate);
 }

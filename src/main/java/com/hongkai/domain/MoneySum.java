@@ -10,6 +10,7 @@ import lombok.Data;
 public class MoneySum {
     Integer customerId;
     String customer;
+    Integer rest;
     Integer cost;
     Integer store;
     Integer discount;

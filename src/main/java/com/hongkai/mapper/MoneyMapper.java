@@ -84,4 +84,44 @@ public interface MoneyMapper {
                                                  @Param("type") Integer type,
                                                  @Param("startDate") String startDate,
                                                  @Param("endDate") String endDate);
+
+    @Select(
+        "SELECT sum(money.num) as total "
+            + "FROM money "
+            + "WHERE customer_id = #{customerId} AND type = #{type} AND date >= #{startDate} AND date <= #{endDate} "
+    )
+    Integer sumTotalByCustomer(@Param("customerId")Integer customerId,
+                           @Param("type")Integer type,
+                           @Param("startDate")String startDate,
+                           @Param("endDate")String endDate);
+
+    @Select(
+        "SELECT sum(money.num) as total "
+            + "FROM money "
+            + "WHERE customer_id = #{customerId} AND type = #{type} AND date < #{endDate} "
+    )
+    Integer sumLastTotalByCustomer(@Param("customerId")Integer customerId,
+                               @Param("type")Integer type,
+                               @Param("endDate")String endDate);
+
+    @Select(
+        "SELECT customer.id as customerId,customer.pinyin as pinyin,customer.name as customer,sum(money.num) as num "
+            + "FROM money "
+            + "LEFT JOIN customer ON (customer.id = money.customer_id) "
+            + "WHERE type = #{type} AND date >= #{startDate} AND date <= #{endDate} "
+            + " group by money.customer_id"
+    )
+    List<Money> groupTotalByCustomer(@Param("type")Integer type,
+                                     @Param("startDate")String startDate,
+                                     @Param("endDate")String endDate);
+
+    @Select(
+        "SELECT customer.id as customerId,customer.pinyin as pinyin,customer.name as customer,sum(money.num) as num "
+            + "FROM money "
+            + "LEFT JOIN customer ON (customer.id = money.customer_id) "
+            + "WHERE type = #{type} AND date < #{endDate} "
+            + " group by money.customer_id"
+    )
+    List<Money> groupLastTotalByCustomer(@Param("type")Integer type,
+                                         @Param("endDate")String endDate);
 }

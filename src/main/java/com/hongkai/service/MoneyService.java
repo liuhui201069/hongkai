@@ -42,4 +42,16 @@ public class MoneyService {
             return new Result(false, String.format("查询应收款明细从%s到%s的详细列表失败", type, startDate, endDate));
         }
     }
+
+    /**
+     * 本期付款
+     * @return
+     */
+    public Integer sumTotalByCustomer(Integer customerId, Integer htyw, String startDate, String endDate) {
+        return moneyMapper.sumTotalByCustomer(customerId,htyw,startDate,endDate);
+    }
+
+    public Integer sumLastTotalByCustomer(Integer customerId, Integer htyw, String endDate) {
+        return moneyMapper.sumLastTotalByCustomer(customerId,htyw,endDate);
+    }
 }

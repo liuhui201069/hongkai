@@ -21,14 +21,14 @@
     <link rel="stylesheet" href="../Assets/css/bootstrap-table.min.css"/>
     <style>
         *{padding:0px;margin:0px;}
-        .pop {  display: none;  width: 950px; min-height: 470px;  max-height: 850px;  height:470px;  position: absolute;  top: 0;  left: 0;  bottom: 0;  right: 0;  margin: auto;  padding: 5px;  z-index: 130;  border-radius: 8px;  background-color: #fff;  box-shadow: 0 3px 18px rgba(100, 0, 0, .5);  }
+        .pop {  display: none;  width: 950px; min-height: 470px;  max-height: 850px;  height:490px;  position: absolute;  top: 0;  left: 0;  bottom: 0;  right: 0;  margin: auto;  padding: 5px;  z-index: 130;  border-radius: 8px;  background-color: #fff;  box-shadow: 0 3px 18px rgba(100, 0, 0, .5);  }
         .pop-top{ width:100%;  border-bottom: 1px #E5E5E5 solid; padding-left: 10px; padding-bottom: 10px;  }
         .pop-top h2{  float: left;  display:black}
         .pop-top span{  float: right;  cursor: pointer;  font-weight: bold; display:black}
         .pop-foot{  height:50px;  line-height:50px;  width:100%;  border-top: 1px #E5E5E5 solid;  text-align: right;  }
         .pop-cancel, .pop-ok {  padding:8px 15px;  margin:15px 5px;  border: none;  border-radius: 5px;  background-color: #337AB7;  color: #fff;  cursor:pointer;  }
         .pop-cancel {  background-color: #FFF;  border:1px #CECECE solid;  color: #000;  }
-        .pop-content{  height: 380px;  }
+        .pop-content{  height: 280px;  }
         .pop-content-left{  float: left;  }
         .pop-content-right{  width:310px;  float: left;  padding-top:20px;  padding-left:20px;  font-size: 16px;  line-height:35px;  }
         .bgPop{  display: none;  position: absolute;  z-index: 129;  left: 0;  top: 0;  width: 100%;  height: 850px;  background: rgba(0,0,0,.2);  }
@@ -60,6 +60,8 @@
             function hidePop(){
                 $('.bgPop,.pop').hide();
                 $('#detail_table').bootstrapTable('destroy');
+                $('#rest_table').bootstrapTable('destroy');
+                $('#rest_div').css("height", "0px");
             }
 
             function showPop(){
@@ -224,10 +226,35 @@
                         success: function (result) {
                             //请求正确之后的操作
                             $("#add_result").text(result.message);
-                            console.log(result.result);
+                            console.log(result.result.records);
+                            $('#rest_table').bootstrapTable('destroy');
+                            $('#rest_div').css("height", "100px");
+                            $('#rest_table').bootstrapTable({
+                                data: result.result.rest,
+                                toolbar: '#toolbar',                //工具按钮用哪个容器
+                                striped: true,                      //是否显示行间隔色
+                                sortable: true,                     //是否启用排序
+                                sortOrder: "asc",                   //排序方式
+                                columns: [{
+                                    field: 'last_rest',
+                                    title: '上期欠款'
+                                }, {
+                                    field: 'current_cost',
+                                    title: '本期发生',
+                                    sortable:true
+                                }, {
+                                    field: 'current_pay',
+                                    title: '本期付款',
+                                    sortable:true
+                                }, {
+                                    field: 'current_rest',
+                                    title: '本期下欠',
+                                    sortable:true
+                                }]
+                            });
                             $('#detail_table').bootstrapTable('destroy');
                             $('#detail_table').bootstrapTable({
-                                data: result.result,
+                                data: result.result.records,
                                 toolbar: '#toolbar',                //工具按钮用哪个容器
                                 striped: true,                      //是否显示行间隔色
                                 sortable: true,                     //是否启用排序
@@ -434,6 +461,13 @@
     </div>
 
     <div id="detail_div" class="pop-content">
+        <div id="rest_div">
+            <table id="rest_table">
+                <thead>
+                </thead>
+            </table>
+        </div>
+
         <table id="detail_table">
             <thead>
             </thead>
